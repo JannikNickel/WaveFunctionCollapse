@@ -25,8 +25,8 @@ namespace WFCUI
     {
         //Settings
         private const double emptyTileSizeMult = 0.95d;
-        private const int iterationDelay = 10;
-        private const bool animate = false;
+        private const int iterationDelay = 0;
+        private const bool animate = true;
         private static readonly string[] tileset0 = new string[]
         {
             "./Tiles/Tileset_0_T0.png",
@@ -52,21 +52,21 @@ namespace WFCUI
         {
             //Tiles
             //top, right, bottom, left in clockwise order
-            StringTile2D<BitmapImage>[] tiles = new StringTile2D<BitmapImage>[]
+            Tile2D<BitmapImage, StringConnector>[] tiles = new Tile2D<BitmapImage, StringConnector>[]
             {
-                new StringTile2D<BitmapImage>(LoadImage(tileset0[0]), new string[] { "0", "0", "0", "0" }, new int[] { 0, 90, 180, 270 }),
-                new StringTile2D<BitmapImage>(LoadImage(tileset0[1]), new string[] { "0", "1", "0", "1" }, new int[] { 0/*, 90, 180, 270*/ }),
-                new StringTile2D<BitmapImage>(LoadImage(tileset0[2]), new string[] { "1", "1", "0", "0" }, new int[] { 0, 90, 180, 270 }),
-                new StringTile2D<BitmapImage>(LoadImage(tileset0[3]), new string[] { "0", "1", "1", "1" }, new int[] { 0, 90, 180, 270 }),
-                new StringTile2D<BitmapImage>(LoadImage(tileset0[4]), new string[] { "1", "1", "1", "1" }, new int[] { 0, 90, 180, 270 })
+                new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset0[0]), 1d, "0", "0", "0", "0", new int[] { 0, 90, 180, 270 }),
+                new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset0[1]), 0.25d, "0", "1", "0", "1", new int[] { 0/*, 90, 180, 270*/ }),
+                new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset0[2]), 1d, "1", "1", "0", "0", new int[] { 0, 90, 180, 270 }),
+                new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset0[3]), 1d, "0", "1", "1", "1", new int[] { 0, 90, 180, 270 }),
+                new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset0[4]), 1d, "1", "1", "1", "1", new int[] { 0, 90, 180, 270 })
             };
 
-            WFCTiled2D<BitmapImage> wfc = new WFCTiled2D<BitmapImage>(32, 32, tiles);
+            WFCTiled2D<Tile2D<BitmapImage, StringConnector>, BitmapImage, StringConnector> wfc = new WFCTiled2D<Tile2D<BitmapImage, StringConnector>, BitmapImage, StringConnector>(32, 32, tiles, true);
             if(animate == true)
             {
                 Thread t = new Thread(async () =>
                 {
-                    while(wfc.Iterate(out Grid<TileResult<BitmapImage>> currentGrid) == true)
+                    while(wfc.Iterate(out Grid<TileResult2D<Tile2D<BitmapImage, StringConnector>>> currentGrid) == true)
                     {
                         await Dispatcher.InvokeAsync(() => DrawGrid(currentGrid));
                         Thread.Sleep(iterationDelay);
@@ -77,16 +77,16 @@ namespace WFCUI
             }
             else
             {
-                Grid<TileResult<BitmapImage>> currentGrid;
+                Grid<TileResult2D<Tile2D<BitmapImage, StringConnector>>> currentGrid;
                 while(wfc.Iterate(out currentGrid) == true)
                 {
-                    
+
                 }
                 DrawGrid(currentGrid);
             }
         }
 
-        private void DrawGrid(Grid<TileResult<BitmapImage>> grid, bool cached = true)
+        private void DrawGrid(Grid<TileResult2D<Tile2D<BitmapImage, StringConnector>>> grid, bool cached = true)
         {
             if(cached == false)
             {
@@ -106,19 +106,19 @@ namespace WFCUI
             {
                 for(int k = 0;k < grid.Height;k++)
                 {
-                    double sizeMult = grid[i, k].tileSrc == null ? emptyTileSizeMult : 1d;
+                    double sizeMult = grid[i, k].selectedTile == null ? emptyTileSizeMult : 1d;
                     double w = tileWidth * sizeMult;
                     double h = tileHeight * sizeMult;
 
                     FrameworkElement? element = uiGrid?[i, k];
-                    if(element != null && (grid[i, k].tileSrc == null ? (element is not Rectangle) : (element is not Image)))
+                    if(element != null && (grid[i, k].selectedTile == null ? (element is not Rectangle) : (element is not Image)))
                     {
                         canvas.Children.Remove(element);
                         element = null;
                     }
                     if(element == null)
                     {
-                        element = grid[i, k].tileSrc != null ? new ImageEx() : new Rectangle();
+                        element = grid[i, k].selectedTile != null ? new ImageEx() : new Rectangle();
                         if(cached == true && uiGrid != null)
                         {
                             uiGrid[i, k] = element;
@@ -127,7 +127,7 @@ namespace WFCUI
                         if(element is Image image)
                         {
                             image.Stretch = Stretch.Fill;
-                            image.Source = grid[i, k].tileSrc;
+                            image.Source = grid[i, k].selectedTile.Data;
                             RotateTransform transform = new RotateTransform(grid[i, k].rotation, w * 0.5d, h * 0.5d);
                             image.RenderTransform = transform;
                         }

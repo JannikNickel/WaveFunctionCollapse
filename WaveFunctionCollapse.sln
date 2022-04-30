@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.32112.339
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WaveFunctionCollapse", "WaveFunctionCollapse\WaveFunctionCollapse.csproj", "{F04ADF4F-8168-4B60-B0E6-5B646A0910C9}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WFCUI", "WFCUI\WFCUI.csproj", "{1D8A9EE5-AE1E-43C0-A26D-7E1A6577524E}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{F04ADF4F-8168-4B60-B0E6-5B646A0910C9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{F04ADF4F-8168-4B60-B0E6-5B646A0910C9}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{F04ADF4F-8168-4B60-B0E6-5B646A0910C9}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{F04ADF4F-8168-4B60-B0E6-5B646A0910C9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1D8A9EE5-AE1E-43C0-A26D-7E1A6577524E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1D8A9EE5-AE1E-43C0-A26D-7E1A6577524E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1D8A9EE5-AE1E-43C0-A26D-7E1A6577524E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1D8A9EE5-AE1E-43C0-A26D-7E1A6577524E}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {ADC7C14C-1F62-495F-8681-D38B5BCFB773}
+	EndGlobalSection
+EndGlobal

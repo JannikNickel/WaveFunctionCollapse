@@ -82,7 +82,7 @@ namespace WaveFunctionCollapse
             }
         }
 
-        public bool Iterate(out Grid<TileResult2D<T>> currentGrid)
+        public bool Iterate(out Grid<TileResult2D<T>> currentGrid, bool stopIfNoSolution = true)
         {
             currentGrid = this.currentGrid;
 
@@ -100,7 +100,7 @@ namespace WaveFunctionCollapse
                     }
                     int entropy = CalcEntropy(currentGrid, i, k, ref currentGrid[i, k].possibleTiles);
                     currentGrid[i, k].entropy = entropy;
-                    if(entropy < lowestEntropy)
+                    if(entropy < lowestEntropy && (stopIfNoSolution == true || entropy > 0))
                     {
                         lowestEntropy = entropy;
                         lowestIndex = (i, k);
@@ -109,7 +109,7 @@ namespace WaveFunctionCollapse
             }
 
             //No non set tile left or stuck
-            if(lowestEntropy == int.MaxValue || lowestEntropy == 0)
+            if(lowestEntropy == int.MaxValue || (stopIfNoSolution == true && lowestEntropy == 0))
             {
                 return false;
             }

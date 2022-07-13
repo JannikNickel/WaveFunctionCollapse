@@ -24,6 +24,8 @@ namespace WaveFunctionCollapse
         private Grid<TileResult2D<T>> currentGrid;
         private Random random;
 
+        public TileVariation2D<TConnector>[] TileVariations => tileVariations;
+
         public WFCTiled2D(int width, int height, T[] tiles, bool useTileProbabilities = false, int seed = 0)
         {
             this.width = width;
@@ -44,7 +46,11 @@ namespace WaveFunctionCollapse
                         throw new ArgumentException("Tile rotations have to be a multiple of 90!");
                     }
 
-                    TConnector[] connectors = (TConnector[])tile.Connectors.Clone();
+                    TConnector[] connectors = new TConnector[tile.Connectors.Length];
+                    for(int l = 0;l < connectors.Length;l++)
+                    {
+                        connectors[l] = (TConnector)tile.Connectors[l].Clone();
+                    }
                     RotateArray(ref connectors, tile.Rotations[k]);
                     double prob = tile.Probability / tile.Rotations.Length;//Divide by tile variation count to make sure that all tiles have the same base probability
                     tileVariations.Add(new TileVariation2D<TConnector>(i, tile.Rotations[k], prob, connectors));
@@ -86,9 +92,8 @@ namespace WaveFunctionCollapse
         {
             currentGrid = this.currentGrid;
 
-            //Update entropy
+            //Update entropy and store lowest entropy > 0
             int lowestEntropy = int.MaxValue;
-            (int x, int y) lowestIndex = default;
             for(int i = 0;i < width;i++)
             {
                 for(int k = 0;k < height;k++)
@@ -100,10 +105,26 @@ namespace WaveFunctionCollapse
                     }
                     int entropy = CalcEntropy(currentGrid, i, k, ref currentGrid[i, k].possibleTiles);
                     currentGrid[i, k].entropy = entropy;
-                    if(entropy < lowestEntropy && (stopIfNoSolution == true || entropy > 0))
+
+                    if(stopIfNoSolution == true || entropy > 0)
                     {
-                        lowestEntropy = entropy;
-                        lowestIndex = (i, k);
+                        if(entropy < lowestEntropy)
+                        {
+                            lowestEntropy = entropy;
+                        }
+                    }
+                }
+            }
+
+            //Collect all tiles with the lowest entropy
+            List<(int x, int y)> lowestEntropyTiles = new List<(int x, int y)>();
+            for(int i = 0;i < width;i++)
+            {
+                for(int k = 0;k < height;k++)
+                {
+                    if(currentGrid[i, k].entropy == lowestEntropy)
+                    {
+                        lowestEntropyTiles.Add((i, k));
                     }
                 }
             }
@@ -114,9 +135,9 @@ namespace WaveFunctionCollapse
                 return false;
             }
 
-            //Select random tile for lowest entropy tile
-            int x = lowestIndex.x;
-            int y = lowestIndex.y;
+            //Select random tile for random tile with the lowest entropy
+            (int x, int y) = lowestEntropyTiles[random.Next(0, lowestEntropyTiles.Count)];
+
             int selectedTile = useTileProbabilities ? PickRandomTileProbability(currentGrid[x, y].possibleTiles) : currentGrid[x, y].possibleTiles[random.Next(0, currentGrid[x, y].possibleTiles.Count)];
             currentGrid[x, y].tileIndex = selectedTile;
             currentGrid[x, y].selectedTile = this.tiles[this.tileVariations[selectedTile].tileIndex];

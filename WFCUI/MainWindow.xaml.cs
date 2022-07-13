@@ -25,9 +25,11 @@ namespace WFCUI
     {
         //Settings
         private const double emptyTileSizeMult = 0.95d;
-        private const int iterationDelay = 1000;
+        private const int iterationDelay = 10;
+        private const int size = 32;
+        private const bool outputTiles = false;
         private const bool animate = true;
-        private const bool stopIfNoSolution = false;
+        private const bool stopIfNoSolution = true;
         private static readonly string[] tileset0 = new string[]
         {
             "./Tiles/Tileset_0_T0.png",
@@ -58,28 +60,36 @@ namespace WFCUI
         {
             //Tiles
             //top, right, bottom, left in clockwise order
-            //Tile2D<BitmapImage, StringConnector>[] tiles = new Tile2D<BitmapImage, StringConnector>[]
-            //{
-            //    new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset0[0]), 1d, "0", "0", "0", "0", new int[] { 0, 90, 180, 270 }),
-            //    new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset0[1]), 0.25d, "0", "1", "0", "1", new int[] { 0/*, 90, 180, 270*/ }),
-            //    new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset0[2]), 1d, "1", "1", "0", "0", new int[] { 0, 90, 180, 270 }),
-            //    new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset0[3]), 1d, "0", "1", "1", "1", new int[] { 0, 90, 180, 270 }),
-            //    new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset0[4]), 1d, "1", "1", "1", "1", new int[] { 0, 90, 180, 270 })
-            //};
             Tile2D<BitmapImage, StringConnector>[] tiles = new Tile2D<BitmapImage, StringConnector>[]
             {
-                new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[0]), 1d, "MMM", "MBB", "BBM", "MMM", new int[] { 0, 90, 180, 270 }),
-                new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[1]), 1d, "MMM", "MBB", "BBB", "BBM", new int[] { 0, 90, 180, 270 })
+                new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset0[0]), 1d, "0", "0", "0", "0", new int[] { 0, 90, 180, 270 }),
+                new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset0[1]), 0.25d, "0", "1", "0", "1", new int[] { 0/*, 90, 180, 270*/ }),
+                new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset0[2]), 1d, "1", "1", "0", "0", new int[] { 0, 90, 180, 270 }),
+                new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset0[3]), 1d, "0", "1", "1", "1", new int[] { 0, 90, 180, 270 }),
+                new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset0[4]), 1d, "1", "1", "1", "1", new int[] { 0, 90, 180, 270 })
             };
 
-            WFCTiled2D<Tile2D<BitmapImage, StringConnector>, BitmapImage, StringConnector> wfc = new WFCTiled2D<Tile2D<BitmapImage, StringConnector>, BitmapImage, StringConnector>(8, 8, tiles, false);
+            WFCTiled2D<Tile2D<BitmapImage, StringConnector>, BitmapImage, StringConnector> wfc = new WFCTiled2D<Tile2D<BitmapImage, StringConnector>, BitmapImage, StringConnector>(size, size, tiles, false);
+
+            //DEBUG
+            if(outputTiles)
+            {
+                foreach(var item in wfc.TileVariations)
+                {
+                    TilePreview window = new TilePreview();
+                    window.Show();
+                    window.Init(tiles[item.tileIndex].Data, item.rotation, item.connectors.Select(n => n.ToString()).ToArray());
+                }
+            }
+
+
             if(animate == true)
             {
                 Thread t = new Thread(async () =>
                 {
                     while(wfc.Iterate(out Grid<TileResult2D<Tile2D<BitmapImage, StringConnector>>> currentGrid, stopIfNoSolution) == true)
                     {
-                        await Dispatcher.InvokeAsync(() => DrawGrid(currentGrid));
+                        await Dispatcher.InvokeAsync(() => DrawGrid(currentGrid, true));
                         Thread.Sleep(iterationDelay);
                     }
                 });

@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace WaveFunctionCollapse
 {
-    internal struct TileVariation2D<TConnector> where TConnector : IConnector
+    public struct TileVariation2D<TConnector> where TConnector : IConnector
     {
         public int tileIndex;
         public int rotation;

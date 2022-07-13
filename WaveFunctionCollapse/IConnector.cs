@@ -9,5 +9,6 @@ namespace WaveFunctionCollapse
     public interface IConnector
     {
         bool CanConnectTo(IConnector other);
+        IConnector Clone();
     }
 }

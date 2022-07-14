@@ -27,6 +27,7 @@ namespace WaveFunctionCollapse
         private int height;
         private bool useTileProbabilities;
         private T[] tiles;
+        private IDynamicConnectorRule2D rule;
         private TileVariation2D<TConnector>[] tileVariations;
         private Grid<TileResult2D<T>> currentGrid;
         private Random random;
@@ -38,7 +39,7 @@ namespace WaveFunctionCollapse
 
         public TileVariation2D<TConnector>[] TileVariations => tileVariations;
 
-        public WFCTiled2D(int width, int height, T[] tiles, bool useTileProbabilities = false, int seed = 0, bool backtracking = false)
+        public WFCTiled2D(int width, int height, T[] tiles, IDynamicConnectorRule2D rule, bool useTileProbabilities = false, int seed = 0, bool backtracking = false)
         {
             this.width = width;
             this.height = height;
@@ -50,6 +51,7 @@ namespace WaveFunctionCollapse
             this.random = new Random(seed);
             Console.WriteLine($"Seed {seed}");
             this.tiles = tiles;
+            this.rule = rule;
             this.backtracking = backtracking;
             if(backtracking)
             {
@@ -223,7 +225,8 @@ namespace WaveFunctionCollapse
                 TConnector neighbourConnector = neighbour.connectors[(l + 2) % 4];//Inverse side of the current neighbour dir
                 for(int j = possibleTiles.Count - 1;j >= 0;j--)
                 {
-                    if(this.tileVariations[possibleTiles[j]].connectors[l].CanConnectTo(neighbourConnector) == false)
+                    if(this.tileVariations[possibleTiles[j]].connectors[l].CanConnectTo(neighbourConnector) == false
+                        || (rule != null && rule.CanConnect(this.tileVariations[possibleTiles[j]].tileIndex, (i, k), l, grid[x, y] != null && grid[x, y].tileIndex != -1 ? this.tileVariations[grid[x, y].tileIndex].tileIndex : -1, (x, y), (l + 2) % 4) == false))
                     {
                         //Cant connect
                         possibleTiles.RemoveAt(j);

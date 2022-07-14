@@ -51,18 +51,18 @@ namespace WFCUI
             "./Tiles/Tileset_1_T13.png"
         };
         //Tiles connectors -> top, right, bottom, left in clockwise order
-        private static readonly IReadOnlyDictionary<string, Tile2D<BitmapImage, StringConnector>[]> tilesets = new Dictionary<string, Tile2D<BitmapImage, StringConnector>[]>()
+        private static readonly IReadOnlyDictionary<string, (Tile2D<BitmapImage, StringConnector>[] set, IDynamicConnectorRule2D? rule)> tilesets = new Dictionary<string, (Tile2D<BitmapImage, StringConnector>[], IDynamicConnectorRule2D?)>()
         {
-            { "Pipes", new Tile2D<BitmapImage, StringConnector>[5]
+            { "Pipes", (new Tile2D<BitmapImage, StringConnector>[5]
                 {
                     new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset0[0]), 1d, "0", "0", "0", "0", new int[] { 0, 90, 180, 270 }),
                     new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset0[1]), 0.25d, "0", "1", "0", "1", new int[] { 0/*, 90, 180, 270*/ }),
                     new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset0[2]), 1d, "1", "1", "0", "0", new int[] { 0, 90, 180, 270 }),
                     new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset0[3]), 1d, "0", "1", "1", "1", new int[] { 0, 90, 180, 270 }),
                     new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset0[4]), 1d, "1", "1", "1", "1", new int[] { 0, 90, 180, 270 })
-                }
+                }, null)
             },
-            { "Circuit", new Tile2D<BitmapImage, StringConnector>[]
+            { "Circuit", (new Tile2D<BitmapImage, StringConnector>[]
                 {
                     new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[0]), 1d, "RRR", "RRR", "RRR", "RRR", new int[] { 0 }),
                     new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[1]), 1d, "RRR", "RRR", "RRG", "GRR", new int[] { 0, 90, 180, 270 }),
@@ -78,10 +78,23 @@ namespace WFCUI
                     new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[11]), 1d, "GGG", "GGG", "GGG", "GGG", new int[] { 0, 90 }),
                     new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[12]), 1d, "ROR", "RLR", "ROR", "RLR", new int[] { 0, 90 }),
                     new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[13]), 1d, "ROR", "ROR", "ROR", "ROR", new int[] { 0 })
-                    //TODO fix the connecting to itself for some tiles (https://github.com/CodingTrain/Wave-Function-Collapse/issues/23)
-                }
+                }, new Tileset1ConnectorRule())
             },
         };
+
+        //Fix the connecting to itself for some tiles (T1, T6)
+        public class Tileset1ConnectorRule : IDynamicConnectorRule2D
+        {
+            public bool CanConnect(int tile1Index, (int x, int y) tile1Pos, int tile1ConnectorIndex, int tile2Index, (int x, int y) tile2Pos, int tile2ConnectorIndex)
+            {
+                if(tile1Index == 1 && tile2Index == 1)
+                {
+                    //This also prevents T6 to T6 connection from happening, because 2 T1 tiles would have to be connected in that case
+                    return false;
+                }
+                return true;
+            }
+        }
 
         //UI settings
         private const double emptyTileSizeMult = 0.95d;
@@ -133,7 +146,8 @@ namespace WFCUI
             startButton.Click += delegate
             {
                 //Read settings from UI and start generation
-                Tile2D<BitmapImage, StringConnector>[] tileset = tilesets[(string)tilesetCombobox.SelectedItem];
+                Tile2D<BitmapImage, StringConnector>[] tileset = tilesets[(string)tilesetCombobox.SelectedItem].set;
+                IDynamicConnectorRule2D rule = tilesets[(string)tilesetCombobox.SelectedItem].rule;
                 bool animate = animateCheckbox.IsChecked.Value;
                 int iterationDelay = animate == true ? (int)Math.Round(delaySlider.Value * 1000) : 0;
                 int size = (int)Math.Round(sizeSlider.Value);
@@ -143,7 +157,7 @@ namespace WFCUI
                 bool backtracking = backtrackingCheckbox.IsChecked.Value;
                 int seed = int.Parse(seedTextbox.Text);
 
-                Generate(tileset, animate, iterationDelay, size, outputTiles, stopIfNoSolution, restartIfNoSolution, backtracking, seed);
+                Generate(tileset, rule, animate, iterationDelay, size, outputTiles, stopIfNoSolution, restartIfNoSolution, backtracking, seed);
             };
             return;
         }
@@ -171,7 +185,7 @@ namespace WFCUI
             DrawGrid(emptyGrid);
         }
 
-        private void Generate(Tile2D<BitmapImage, StringConnector>[] tileset, bool animate, int iterationDelay, int size, bool outputTiles, bool stopIfNoSolution, bool restartIfNoSolution, bool backtracking, int seed)
+        private void Generate(Tile2D<BitmapImage, StringConnector>[] tileset, IDynamicConnectorRule2D rule, bool animate, int iterationDelay, int size, bool outputTiles, bool stopIfNoSolution, bool restartIfNoSolution, bool backtracking, int seed)
         {
             //Cancel old task
             CancelCurrentGeneration();
@@ -182,7 +196,7 @@ namespace WFCUI
 
             //Generate wfc object
             isRunning = true;
-            WFCTiled2D<Tile2D<BitmapImage, StringConnector>, BitmapImage, StringConnector> wfc = new WFCTiled2D<Tile2D<BitmapImage, StringConnector>, BitmapImage, StringConnector>(size, size, tileset, false, seed, backtracking);
+            WFCTiled2D<Tile2D<BitmapImage, StringConnector>, BitmapImage, StringConnector> wfc = new WFCTiled2D<Tile2D<BitmapImage, StringConnector>, BitmapImage, StringConnector>(size, size, tileset, rule, false, seed, backtracking);
 
             //Show debug tiles
             if(outputTiles == true)

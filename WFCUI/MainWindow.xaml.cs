@@ -16,6 +16,8 @@ using System.Windows.Shapes;
 using WaveFunctionCollapse;
 using System.Threading;
 using System.Text.RegularExpressions;
+using Microsoft.Win32;
+using System.IO;
 
 namespace WFCUI
 {
@@ -159,7 +161,36 @@ namespace WFCUI
 
                 Generate(tileset, rule, animate, iterationDelay, size, outputTiles, stopIfNoSolution, restartIfNoSolution, backtracking, seed);
             };
-            return;
+            storeResultButton.Click += delegate
+            {
+                if(isRunning == true)
+                {
+                    MessageBox.Show("Please wait for the calculation to finish!");
+                }
+                Rect bounds = VisualTreeHelper.GetDescendantBounds(canvas);
+                RenderTargetBitmap bmp = new RenderTargetBitmap((int)bounds.Width, (int)bounds.Height, 96, 96, System.Windows.Media.PixelFormats.Default);
+                DrawingVisual dv = new DrawingVisual();
+                using(DrawingContext context = dv.RenderOpen())
+                {
+                    VisualBrush vb = new VisualBrush(canvas);
+                    context.DrawRectangle(vb, null, new Rect(new Point(), bounds.Size));
+                }
+                bmp.Render(dv);
+                BitmapEncoder png = new PngBitmapEncoder();
+                png.Frames.Add(BitmapFrame.Create(bmp));
+                SaveFileDialog dialog = new SaveFileDialog();
+                dialog.Filter = "Png Image (.png)|*.png";
+                dialog.DefaultExt = "png";
+                dialog.AddExtension = true;
+                if(dialog.ShowDialog() == true)
+                {
+                    string path = dialog.FileName;
+                    using(FileStream stream = File.OpenWrite(path))
+                    {
+                        png.Save(stream);
+                    }
+                }
+            };
         }
 
         private void MainWindow_Closed(object? sender, EventArgs e)

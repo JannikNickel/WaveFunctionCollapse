@@ -27,5 +27,16 @@ namespace WaveFunctionCollapse
             this.height = height;
             this.grid = new T[width, height];
         }
+
+        public IEnumerable<T> Flatten()
+        {
+            for(int i = 0;i < width;i++)
+            {
+                for(int k = 0;k < height;k++)
+                {
+                    yield return grid[i, k];
+                }
+            }
+        }
     }
 }

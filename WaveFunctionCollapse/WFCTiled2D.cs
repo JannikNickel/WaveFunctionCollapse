@@ -6,6 +6,13 @@ using System.Threading.Tasks;
 
 namespace WaveFunctionCollapse
 {
+    public enum WFCResult
+    {
+        Step,
+        Error,
+        Finished
+    }
+
     public class WFCTiled2D<T, TTile, TConnector> where T : ITile2D<TTile, TConnector> where TConnector : IConnector
     {
         private static readonly (int, int)[] neighbourDirs = new (int, int)[4]
@@ -88,7 +95,7 @@ namespace WaveFunctionCollapse
             }
         }
 
-        public bool Iterate(out Grid<TileResult2D<T>> currentGrid, bool stopIfNoSolution = true)
+        public WFCResult Iterate(out Grid<TileResult2D<T>> currentGrid, bool stopIfNoSolution = true)
         {
             currentGrid = this.currentGrid;
 
@@ -106,7 +113,12 @@ namespace WaveFunctionCollapse
                     int entropy = CalcEntropy(currentGrid, i, k, ref currentGrid[i, k].possibleTiles);
                     currentGrid[i, k].entropy = entropy;
 
-                    if(stopIfNoSolution == true || entropy > 0)
+                    if(stopIfNoSolution && entropy == 0)
+                    {
+                        return WFCResult.Error;
+                    }
+
+                    if(entropy > 0)
                     {
                         if(entropy < lowestEntropy)
                         {
@@ -130,9 +142,9 @@ namespace WaveFunctionCollapse
             }
 
             //No non set tile left or stuck
-            if(lowestEntropy == int.MaxValue || (stopIfNoSolution == true && lowestEntropy == 0))
+            if(lowestEntropy == int.MaxValue)
             {
-                return false;
+                return WFCResult.Finished;
             }
 
             //Select random tile for random tile with the lowest entropy
@@ -144,7 +156,7 @@ namespace WaveFunctionCollapse
             currentGrid[x, y].rotation = this.tileVariations[selectedTile].rotation;
             currentGrid[x, y].entropy = 0;
 
-            return true;
+            return WFCResult.Step;
         }
 
         private int PickRandomTileProbability(List<int> possibleTiles)
@@ -187,6 +199,17 @@ namespace WaveFunctionCollapse
                 }
             }
             return possibleTiles.Count;
+        }
+
+        public void Reset()
+        {
+            for(int i = 0;i < currentGrid.Width;i++)
+            {
+                for(int k = 0;k < currentGrid.Height;k++)
+                {
+                    currentGrid[i, k].Reset(Enumerable.Range(0, this.tileVariations.Length).ToList());
+                }
+            }
         }
     }
 }

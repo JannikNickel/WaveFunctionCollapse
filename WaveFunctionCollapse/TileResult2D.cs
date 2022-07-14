@@ -20,5 +20,14 @@ namespace WaveFunctionCollapse
             this.selectedTile = selectedTile;
             this.rotation = rotation;
         }
+
+        public void Reset(List<int> possibleTiles)
+        {
+            selectedTile = default!;
+            rotation = 0;
+            tileIndex = -1;
+            entropy = int.MaxValue;
+            this.possibleTiles = possibleTiles;
+        }
     }
 }

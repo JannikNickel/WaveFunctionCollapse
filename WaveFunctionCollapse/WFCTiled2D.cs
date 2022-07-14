@@ -30,16 +30,33 @@ namespace WaveFunctionCollapse
         private TileVariation2D<TConnector>[] tileVariations;
         private Grid<TileResult2D<T>> currentGrid;
         private Random random;
+        private bool backtracking;
+        private Tree<BacktrackingStep<T>> backtrackingTree;
+        private Stack<BacktrackingStep<T>> backtrackingStack;
+
+        public delegate void Backtrack(Grid<TileResult2D<T>> currentGrid);
+        public event Backtrack OnBacktrack;
 
         public TileVariation2D<TConnector>[] TileVariations => tileVariations;
 
-        public WFCTiled2D(int width, int height, T[] tiles, bool useTileProbabilities = false, int seed = 0)
+        public WFCTiled2D(int width, int height, T[] tiles, bool useTileProbabilities = false, int seed = 0, bool backtracking = false)
         {
             this.width = width;
             this.height = height;
             this.useTileProbabilities = useTileProbabilities;
-            this.random = seed != default ? new Random(seed) : new Random();
+            if(seed == default)
+            {
+                seed = Environment.TickCount;
+            }
+            this.random = new Random(seed);
+            Console.WriteLine($"Seed {seed}");
             this.tiles = tiles;
+            this.backtracking = backtracking;
+            if(backtracking)
+            {
+                backtrackingTree = new Tree<BacktrackingStep<T>>();
+                backtrackingStack = new Stack<BacktrackingStep<T>>();
+            }
 
             //Create tiles for all possible rotations of the source tiles
             List<TileVariation2D<TConnector>> tileVariations = new List<TileVariation2D<TConnector>>();
@@ -113,8 +130,19 @@ namespace WaveFunctionCollapse
                     int entropy = CalcEntropy(currentGrid, i, k, ref currentGrid[i, k].possibleTiles);
                     currentGrid[i, k].entropy = entropy;
 
-                    if(stopIfNoSolution && entropy == 0)
+                    if(stopIfNoSolution == true && entropy == 0)
                     {
+                        if(backtracking == true && backtrackingStack.Count > 0)
+                        {
+                            BacktrackingStep<T> prevStep = backtrackingStack.Pop();
+                            this.currentGrid = prevStep.Grid;
+
+                            OnBacktrack?.Invoke(this.currentGrid);
+
+                            Console.WriteLine("Backtrack");
+                            return Iterate(out this.currentGrid, stopIfNoSolution);
+                        }
+
                         return WFCResult.Error;
                     }
 
@@ -155,6 +183,12 @@ namespace WaveFunctionCollapse
             currentGrid[x, y].selectedTile = this.tiles[this.tileVariations[selectedTile].tileIndex];
             currentGrid[x, y].rotation = this.tileVariations[selectedTile].rotation;
             currentGrid[x, y].entropy = 0;
+
+            if(backtracking == true)
+            {
+                BacktrackingStep<T> step = new BacktrackingStep<T>(currentGrid.Clone(), lowestEntropyTiles);
+                backtrackingStack.Push(step);
+            }
 
             return WFCResult.Step;
         }

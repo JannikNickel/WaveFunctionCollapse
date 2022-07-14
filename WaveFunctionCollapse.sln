@@ -3,9 +3,9 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.0.32112.339
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WaveFunctionCollapse", "WaveFunctionCollapse\WaveFunctionCollapse.csproj", "{F04ADF4F-8168-4B60-B0E6-5B646A0910C9}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WaveFunctionCollapse", "WaveFunctionCollapse\WaveFunctionCollapse.csproj", "{F04ADF4F-8168-4B60-B0E6-5B646A0910C9}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WFCUI", "WFCUI\WFCUI.csproj", "{1D8A9EE5-AE1E-43C0-A26D-7E1A6577524E}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WFCUI", "WFCUI\WFCUI.csproj", "{1D8A9EE5-AE1E-43C0-A26D-7E1A6577524E}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

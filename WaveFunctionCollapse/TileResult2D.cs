@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace WaveFunctionCollapse
 {
-    public class TileResult2D<T>
+    public class TileResult2D<T> : ICloneable
     {
         public T selectedTile;
         public int rotation;
@@ -28,6 +28,16 @@ namespace WaveFunctionCollapse
             tileIndex = -1;
             entropy = int.MaxValue;
             this.possibleTiles = possibleTiles;
+        }
+
+        public object Clone()
+        {
+            return new TileResult2D<T>(selectedTile, rotation)
+            {
+                tileIndex = tileIndex,
+                entropy = entropy,
+                possibleTiles = possibleTiles.Select(n => n).ToList()
+            };
         }
     }
 }

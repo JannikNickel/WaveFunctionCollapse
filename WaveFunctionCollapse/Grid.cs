@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace WaveFunctionCollapse
 {
-    public class Grid<T>
+    public class Grid<T> where T : ICloneable
     {
         private readonly int width;
         private readonly int height;
@@ -37,6 +37,19 @@ namespace WaveFunctionCollapse
                     yield return grid[i, k];
                 }
             }
+        }
+
+        public Grid<T> Clone()
+        {
+            Grid<T> clone = new Grid<T>(Width, Height);
+            for(int i = 0;i < width;i++)
+            {
+                for(int k = 0;k < height;k++)
+                {
+                    clone[i, k] = (T)grid[i, k].Clone();
+                }
+            }
+            return clone;
         }
     }
 }

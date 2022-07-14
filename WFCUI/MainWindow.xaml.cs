@@ -209,11 +209,15 @@ namespace WFCUI
                     {
                         break;
                     }
-                    Dispatcher.Invoke(() => DrawGrid(currentGrid, true));
 
-                    if(iterationDelay > 0)
+                    if(animate == true)
                     {
-                        Thread.Sleep(iterationDelay);
+                        Dispatcher.Invoke(() => DrawGrid(currentGrid, true));
+
+                        if(iterationDelay > 0)
+                        {
+                            Thread.Sleep(iterationDelay);
+                        }
                     }
                 }
                 if(animate == false)

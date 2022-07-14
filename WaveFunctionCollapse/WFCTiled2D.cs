@@ -31,7 +31,6 @@ namespace WaveFunctionCollapse
         private Grid<TileResult2D<T>> currentGrid;
         private Random random;
         private bool backtracking;
-        private Tree<BacktrackingStep<T>> backtrackingTree;
         private Stack<BacktrackingStep<T>> backtrackingStack;
 
         public delegate void Backtrack(Grid<TileResult2D<T>> currentGrid);
@@ -54,7 +53,6 @@ namespace WaveFunctionCollapse
             this.backtracking = backtracking;
             if(backtracking)
             {
-                backtrackingTree = new Tree<BacktrackingStep<T>>();
                 backtrackingStack = new Stack<BacktrackingStep<T>>();
             }
 
@@ -139,7 +137,7 @@ namespace WaveFunctionCollapse
 
                             OnBacktrack?.Invoke(this.currentGrid);
 
-                            Console.WriteLine("Backtrack");
+                            //Console.WriteLine($"Backtrack (d={backtrackingStack.Count})");
                             return Iterate(out this.currentGrid, stopIfNoSolution);
                         }
 
@@ -186,7 +184,7 @@ namespace WaveFunctionCollapse
 
             if(backtracking == true)
             {
-                BacktrackingStep<T> step = new BacktrackingStep<T>(currentGrid.Clone(), lowestEntropyTiles);
+                BacktrackingStep<T> step = new BacktrackingStep<T>(currentGrid.Clone(), /*lowestEntropyTiles*/null);
                 backtrackingStack.Push(step);
             }
 

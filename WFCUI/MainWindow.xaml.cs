@@ -15,6 +15,7 @@ using System.Windows.Navigation;
 using System.Windows.Shapes;
 using WaveFunctionCollapse;
 using System.Threading;
+using System.Text.RegularExpressions;
 
 namespace WFCUI
 {
@@ -23,15 +24,7 @@ namespace WFCUI
     /// </summary>
     public partial class MainWindow : Window
     {
-        //Settings
-        private const double emptyTileSizeMult = 0.95d;
-        private const int iterationDelay = 1;
-        private const int size = 16;
-        private const bool outputTiles = false;
-        private const bool animate = true;
-        private const bool stopIfNoSolution = true;
-        private const bool restartIfNoSolution = true;
-        private const bool backtracking = true;
+        //Tileset data
         private static readonly string[] tileset0 = new string[]
         {
             "./Tiles/Tileset_0_T0.png",
@@ -57,99 +50,155 @@ namespace WFCUI
             "./Tiles/Tileset_1_T12.png",
             "./Tiles/Tileset_1_T13.png"
         };
+        //Tiles connectors -> top, right, bottom, left in clockwise order
+        private static readonly IReadOnlyDictionary<string, Tile2D<BitmapImage, StringConnector>[]> tilesets = new Dictionary<string, Tile2D<BitmapImage, StringConnector>[]>()
+        {
+            { "Pipes", new Tile2D<BitmapImage, StringConnector>[5]
+                {
+                    new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset0[0]), 1d, "0", "0", "0", "0", new int[] { 0, 90, 180, 270 }),
+                    new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset0[1]), 0.25d, "0", "1", "0", "1", new int[] { 0/*, 90, 180, 270*/ }),
+                    new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset0[2]), 1d, "1", "1", "0", "0", new int[] { 0, 90, 180, 270 }),
+                    new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset0[3]), 1d, "0", "1", "1", "1", new int[] { 0, 90, 180, 270 }),
+                    new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset0[4]), 1d, "1", "1", "1", "1", new int[] { 0, 90, 180, 270 })
+                }
+            },
+            { "Circuit", new Tile2D<BitmapImage, StringConnector>[]
+                {
+                    new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[0]), 1d, "RRR", "RRR", "RRR", "RRR", new int[] { 0 }),
+                    new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[1]), 1d, "RRR", "RRR", "RRG", "GRR", new int[] { 0, 90, 180, 270 }),
+                    new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[2]), 1d, "ROR", "RRR", "ROR", "RRR", new int[] { 0, 90 }),
+                    new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[3]), 1d, "RRR", "ROR", "ROR", "ROR", new int[] { 0, 90, 180, 270 }),
+                    new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[4]), 1d, "ROR", "ROR", "RRR", "RRR", new int[] { 0, 90, 180, 270 }),
+                    new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[5]), 1d, "RRR", "ROR", "RRR", "ROR", new int[] { 0, 90 }),
+                    new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[6]), 1d, "ROR", "RRG", "GGG", "GRR", new int[] { 0, 90, 180, 270 }),
+                    new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[7]), 1d, "ROR", "RRR", "RRR", "RRR", new int[] { 0, 90, 180, 270 }),
+                    new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[8]), 1d, "RLR", "RRR", "ROR", "RRR", new int[] { 0, 90, 180, 270 }),
+                    new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[9]), 1d, "RRR", "RLR", "RRR", "RLR", new int[] { 0, 90 }),
+                    new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[10]), 1d, "ROR", "ROR", "RRR", "RRR", new int[] { 0, 90, 180, 270 }),
+                    new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[11]), 1d, "GGG", "GGG", "GGG", "GGG", new int[] { 0, 90 }),
+                    new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[12]), 1d, "ROR", "RLR", "ROR", "RLR", new int[] { 0, 90 }),
+                    new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[13]), 1d, "ROR", "ROR", "ROR", "ROR", new int[] { 0 })
+                    //TODO fix the connecting to itself for some tiles (https://github.com/CodingTrain/Wave-Function-Collapse/issues/23)
+                }
+            },
+        };
+
+        //UI settings
+        private const double emptyTileSizeMult = 0.95d;
 
         //UI elements
         private Canvas canvas;
         private FrameworkElement[,]? uiGrid;
+
+        //Runtime control
+        private bool isRunning = false;
+        private CancellationTokenSource cancellationTokenSource;
 
         public MainWindow()
         {
             InitializeComponent();
             canvas = this.MainCanvas;
 
+            cancellationTokenSource = new CancellationTokenSource();
             this.Loaded += MainWindow_Loaded;
+            this.Closed += MainWindow_Closed;
         }
 
         private void MainWindow_Loaded(object sender, RoutedEventArgs e)
         {
-
-            //Tiles
-            //top, right, bottom, left in clockwise order
-            //Tile2D<BitmapImage, StringConnector>[] tiles = new Tile2D<BitmapImage, StringConnector>[]
-            //{
-            //    new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset0[0]), 1d, "0", "0", "0", "0", new int[] { 0, 90, 180, 270 }),
-            //    new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset0[1]), 0.25d, "0", "1", "0", "1", new int[] { 0/*, 90, 180, 270*/ }),
-            //    new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset0[2]), 1d, "1", "1", "0", "0", new int[] { 0, 90, 180, 270 }),
-            //    new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset0[3]), 1d, "0", "1", "1", "1", new int[] { 0, 90, 180, 270 }),
-            //    new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset0[4]), 1d, "1", "1", "1", "1", new int[] { 0, 90, 180, 270 })
-            //};
-
-            Tile2D<BitmapImage, StringConnector>[] tiles = new Tile2D<BitmapImage, StringConnector>[]
+            //UI stuff
+            tilesetCombobox.ItemsSource = tilesets.Select(n => n.Key);
+            tilesetCombobox.SelectedIndex = 0;
+            sizeSlider.ValueChanged += delegate
             {
-                new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[0]), 1d, "RRR", "RRR", "RRR", "RRR", new int[] { 0 }),
-                new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[1]), 1d, "RRR", "RRR", "RRG", "GRR", new int[] { 0, 90, 180, 270 }),
-                new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[2]), 1d, "ROR", "RRR", "ROR", "RRR", new int[] { 0, 90 }),
-                new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[3]), 1d, "RRR", "ROR", "ROR", "ROR", new int[] { 0, 90, 180, 270 }),
-                new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[4]), 1d, "ROR", "ROR", "RRR", "RRR", new int[] { 0, 90, 180, 270 }),
-                new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[5]), 1d, "RRR", "ROR", "RRR", "ROR", new int[] { 0, 90 }),
-                new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[6]), 1d, "ROR", "RRG", "GGG", "GRR", new int[] { 0, 90, 180, 270 }),
-                new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[7]), 1d, "ROR", "RRR", "RRR", "RRR", new int[] { 0, 90, 180, 270 }),
-                new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[8]), 1d, "RLR", "RRR", "ROR", "RRR", new int[] { 0, 90, 180, 270 }),
-                new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[9]), 1d, "RRR", "RLR", "RRR", "RLR", new int[] { 0, 90 }),
-                new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[10]), 1d, "ROR", "ROR", "RRR", "RRR", new int[] { 0, 90, 180, 270 }),
-                new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[11]), 1d, "GGG", "GGG", "GGG", "GGG", new int[] { 0, 90 }),
-                new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[12]), 1d, "ROR", "RLR", "ROR", "RLR", new int[] { 0, 90 }),
-                new Tile2D<BitmapImage, StringConnector>(LoadImage(tileset1[13]), 1d, "ROR", "ROR", "ROR", "ROR", new int[] { 0 })
+                if(isRunning == false)
+                {
+                    //Draw empty grid if slider changed
+                    ShowEmptyGrid((int)Math.Round(sizeSlider.Value));
+                }
             };
-            //TODO fix the connecting to itself for some tiles (https://github.com/CodingTrain/Wave-Function-Collapse/issues/23)
-            
+            ShowEmptyGrid((int)Math.Round(sizeSlider.Value));
+            seedTextbox.PreviewTextInput += delegate(object sender, TextCompositionEventArgs e)
+            {
+                if(new Regex("^[0-9]*$").IsMatch(e.Text) == false)
+                {
+                    e.Handled = false;
+                }
+            };
+            seedButton.Click += delegate
+            {
+                NewRandomSeed();
+            };
+            seedTextbox.Text = "0";
+            startButton.Click += delegate
+            {
+                //Read settings from UI and start generation
+                Tile2D<BitmapImage, StringConnector>[] tileset = tilesets[(string)tilesetCombobox.SelectedItem];
+                bool animate = animateCheckbox.IsChecked.Value;
+                int iterationDelay = animate == true ? (int)Math.Round(delaySlider.Value * 1000) : 0;
+                int size = (int)Math.Round(sizeSlider.Value);
+                bool outputTiles = outputTilesCheckbox.IsChecked.Value;
+                bool stopIfNoSolution = stopIfNoSolutionCheckbox.IsChecked.Value;
+                bool restartIfNoSolution = restartIfNoSolutionCheckbox.IsChecked.Value;
+                bool backtracking = backtrackingCheckbox.IsChecked.Value;
+                int seed = int.Parse(seedTextbox.Text);
 
-            WFCTiled2D<Tile2D<BitmapImage, StringConnector>, BitmapImage, StringConnector> wfc = new WFCTiled2D<Tile2D<BitmapImage, StringConnector>, BitmapImage, StringConnector>(size, size, tiles, false, 65978343, backtracking);
+                Generate(tileset, animate, iterationDelay, size, outputTiles, stopIfNoSolution, restartIfNoSolution, backtracking, seed);
+            };
+            return;
+        }
 
-            //DEBUG
+        private void MainWindow_Closed(object? sender, EventArgs e)
+        {
+            CancelCurrentGeneration();
+        }
+
+        private void NewRandomSeed()
+        {
+            seedTextbox.Text = Random.Shared.Next().ToString();
+        }
+
+        private void ShowEmptyGrid(int size)
+        {
+            Grid<TileResult2D<Tile2D<BitmapImage, StringConnector>>> emptyGrid = new Grid<TileResult2D<Tile2D<BitmapImage, StringConnector>>>(size, size);
+            for(int i = 0;i < size;i++)
+            {
+                for(int k = 0;k < size;k++)
+                {
+                    emptyGrid[i, k] = new TileResult2D<Tile2D<BitmapImage, StringConnector>>(null, 0);
+                }
+            }
+            DrawGrid(emptyGrid);
+        }
+
+        private void Generate(Tile2D<BitmapImage, StringConnector>[] tileset, bool animate, int iterationDelay, int size, bool outputTiles, bool stopIfNoSolution, bool restartIfNoSolution, bool backtracking, int seed)
+        {
+            //Cancel old task
+            CancelCurrentGeneration();
+
+            //Generate new cancellation token
+            cancellationTokenSource = new CancellationTokenSource();
+            CancellationToken token = cancellationTokenSource.Token;
+
+            //Generate wfc object
+            isRunning = true;
+            WFCTiled2D<Tile2D<BitmapImage, StringConnector>, BitmapImage, StringConnector> wfc = new WFCTiled2D<Tile2D<BitmapImage, StringConnector>, BitmapImage, StringConnector>(size, size, tileset, false, seed, backtracking);
+
+            //Show debug tiles
             if(outputTiles == true)
             {
                 foreach(var item in wfc.TileVariations)
                 {
                     TilePreview window = new TilePreview();
                     window.Show();
-                    window.Init(tiles[item.tileIndex].Data, item.rotation, item.connectors.Select(n => n.ToString()).ToArray());
+                    window.Init(tileset[item.tileIndex].Data, item.rotation, item.connectors.Select(n => n.ToString()).ToArray());
                 }
             }
 
-            //wfc.OnBacktrack += async delegate (Grid<TileResult2D<Tile2D<BitmapImage, StringConnector>>> currentGrid)
-            //{
-            //    await Dispatcher.InvokeAsync(() => DrawGrid(currentGrid, true));
-            //    Thread.Sleep(iterationDelay);
-            //};
-
-            if(animate == true)
+            Thread t = new Thread(() =>
             {
-                bool running = true;
-                CompositionTarget.Rendering += delegate
-                {
-                    if(running == false)
-                    {
-                        return;
-                    }
-                    WFCResult result = wfc.Iterate(out Grid<TileResult2D<Tile2D<BitmapImage, StringConnector>>> currentGrid, stopIfNoSolution);
-                    if(result == WFCResult.Error && restartIfNoSolution == true)
-                    {
-                        wfc.Reset();
-                    }
-                    else if(result != WFCResult.Step)
-                    {
-                        running = false;
-                    }
-
-                    DrawGrid(currentGrid, true);
-                    //Thread.Sleep(iterationDelay);
-                };
-            }
-            else
-            {
-                Grid<TileResult2D<Tile2D<BitmapImage, StringConnector>>> currentGrid;
-                while(true)
+                Grid<TileResult2D<Tile2D<BitmapImage, StringConnector>>> currentGrid = null;
+                while(token.IsCancellationRequested == false)
                 {
                     WFCResult result = wfc.Iterate(out currentGrid, stopIfNoSolution);
                     if(result == WFCResult.Error && restartIfNoSolution == true)
@@ -160,8 +209,29 @@ namespace WFCUI
                     {
                         break;
                     }
+                    Dispatcher.Invoke(() => DrawGrid(currentGrid, true));
+
+                    if(iterationDelay > 0)
+                    {
+                        Thread.Sleep(iterationDelay);
+                    }
                 }
-                DrawGrid(currentGrid);
+                if(animate == false)
+                {
+                    Dispatcher.Invoke(() => DrawGrid(currentGrid, true));
+                }
+                Dispatcher.Invoke(() => isRunning = false);
+            });
+            t.IsBackground = true;
+            t.Start();
+        }
+
+        private void CancelCurrentGeneration()
+        {
+            if(cancellationTokenSource != null)
+            {
+                cancellationTokenSource.Cancel();
+                cancellationTokenSource.Dispose();
             }
         }
 

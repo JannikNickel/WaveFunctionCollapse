@@ -6,7 +6,72 @@
         xmlns:local="clr-namespace:WFCUI"
         mc:Ignorable="d"
         Title="WFC" ResizeMode="NoResize" SizeToContent="WidthAndHeight">
-	<Canvas x:Name="MainCanvas" Background="White" Width="720" Height="720">
-		
-	</Canvas>
+	<Grid Width="1024" Height="720">
+		<Grid.ColumnDefinitions>
+			<ColumnDefinition Width="304"/>
+			<ColumnDefinition Width="720"/>
+		</Grid.ColumnDefinitions>
+		<StackPanel Grid.Column="0" Margin="20,0,20,0" >
+			<!--<StackPanel.Resources>
+				<Style TargetType="{x:Type TextBlock}">
+					<Setter Property="Margin" Value="0,0,0,5"/>
+				</Style>
+			</StackPanel.Resources>-->
+			<TextBlock Text="Wave Function Collapse" FontSize="25" />
+			<Separator Margin="0,-5,0,0" />
+			<TextBlock Text="Generation Settings" FontSize="20" Margin="0,0,0,0" />
+			<TextBlock Text="Tileset" Padding="0,5,0,0" />
+			<ComboBox x:Name="tilesetCombobox" />
+			<TextBlock Text="Size" Padding="0,5,0,0" />
+			<Grid>
+				<Slider x:Name="sizeSlider" Minimum="4" Maximum="128" IsSnapToTickEnabled="True" Ticks="4, 8, 16, 32, 48, 64, 96, 128" Margin="0,0,35,0"/>
+				<TextBlock Width="35" HorizontalAlignment="Right" TextAlignment="Center" VerticalAlignment="Center" Text="{Binding ElementName=sizeSlider, Path=Value, UpdateSourceTrigger=PropertyChanged}" />
+			</Grid>
+			<TextBlock Text="Seed" Padding="0,5,0,0" />
+			<Grid>
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition />
+					<ColumnDefinition />
+				</Grid.ColumnDefinitions>
+				<TextBox x:Name="seedTextbox" HorizontalAlignment="Stretch" TextAlignment="Center" VerticalAlignment="Center" Grid.Column="0" />
+				<Button x:Name="seedButton" Content="Random" Grid.Column="1" />
+			</Grid>
+			<TextBlock Text="Display Settings" FontSize="20" Margin="0,5,0,10" />
+			<CheckBox x:Name="outputTilesCheckbox" Content="Output Tiles (debug)" Margin="0,5,0,0" />
+			<CheckBox x:Name="animateCheckbox" Content="Animate" IsChecked="True" Margin="0,5,0,0" />
+			<TextBlock Text="Delay (s)" Padding="0,5,0,0">
+				<TextBlock.Style>
+					<Style TargetType="{x:Type TextBlock}">
+						<Setter Property="Visibility" Value="Collapsed"/>
+						<Style.Triggers>
+							<DataTrigger Binding="{Binding ElementName=animateCheckbox, Path=IsChecked}" Value="True">
+								<Setter Property="Visibility" Value="Visible"/>
+							</DataTrigger>
+						</Style.Triggers>
+					</Style>
+				</TextBlock.Style>
+			</TextBlock>
+			<Grid>
+				<Grid.Style>
+					<Style TargetType="{x:Type Grid}">
+						<Setter Property="Visibility" Value="Collapsed"/>
+						<Style.Triggers>
+							<DataTrigger Binding="{Binding ElementName=animateCheckbox, Path=IsChecked}" Value="True">
+								<Setter Property="Visibility" Value="Visible"/>
+							</DataTrigger>
+						</Style.Triggers>
+					</Style>
+				</Grid.Style>
+				<Slider x:Name="delaySlider" Minimum="0" Maximum="1" IsSnapToTickEnabled="True" TickFrequency="0.05" Margin="0,0,35,0"/>
+				<TextBlock Width="35" HorizontalAlignment="Right" TextAlignment="Center" VerticalAlignment="Center" Text="{Binding ElementName=delaySlider, Path=Value, UpdateSourceTrigger=PropertyChanged, StringFormat={}{0:0.00}s}" />
+			</Grid>
+			<CheckBox x:Name="stopIfNoSolutionCheckbox" Content="Stop If No Solution" IsChecked="True" Margin="0,5,0,0" />
+			<CheckBox x:Name="restartIfNoSolutionCheckbox" Content="Restart If No Solution" Margin="0,5,0,0" />
+			<CheckBox x:Name="backtrackingCheckbox" Content="Backtracking" Margin="0,5,0,0" />
+			<Button x:Name="startButton" Content="Start" Margin="0,10,0,0"/>
+		</StackPanel>
+		<Canvas x:Name="MainCanvas" Background="White" Width="720" Height="720" Grid.Column="1">
+
+		</Canvas>
+	</Grid>
 </Window>
